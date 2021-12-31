@@ -1,0 +1,77 @@
+server:
+  port: 10086
+spring:
+  profiles:
+    active: dev
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+  redis:
+    host: 192.168.1.251
+    port: 9151
+    password: jiujiard991
+  web:
+    resources:
+      static-locations:
+        - classpath:/META-INF/resources/
+        - classpath:/resources/
+        - classpath:/static/
+        - classpath:/public/
+        - file:${user.dir}/
+  datasource:
+    url: jdbc:mysql://192.168.1.251:9106/ecdispatch?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: jj@admin
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      # 连接池最大连接数，默认是10
+      maximum-pool-size: 20
+      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+      max-lifetime: 180000
+      # 空闲连接存活最大时间，默认600000（10分钟）
+      idle-timeout: 60000
+      # 数据库连接超时时间,默认30秒，即30000
+      connection-timeout: 20000
+      # 最小空闲连接数量
+      minimum-idle: 5
+      # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      auto-commit: true
+      connection-test-query: SELECT 1
+mybatis-plus:
+  # MyBatis Mapper 所对应的 XML 文件位置，如果您在 Mapper 中有自定义方法（XML 中有自定义实现），
+  mapper-locations: classpath:/mapper/*.xml
+  # 如果是放在src/main/java目录下 classpath:/com/yourpackage/*/mapper/*Mapper.xml
+  # 如果是放在resource目录 classpath:/mapper/*Mapper.xml
+  #实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: com.yyh.web.entity
+  global-config:
+    #主键类型  0:"数据库ID自增", 1:"用户输入ID",2:"全局唯一ID (数字类型唯一ID)", 3:"全局唯一ID UUID";
+    db-config:
+      id-type: ASSIGN_ID
+      table-underline: true
+      logic-delete-field: delFlag # 全局逻辑删除的实体字段名
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+      #数据库大写下划线转换
+      capital-mode: true
+sip:
+  ip: ${SIP_HOST:192.168.1.100}
+  port: 9306
+  domain: ${SIP_DOMAIN:4404000000}
+  id: ${SIP_ID:44040000002000000001}
+  password: ${SIP_PWD:123456}
+media:
+  ip: ${MEDIA_IP:192.168.1.249}
+  port: 19300
+  secret: 035c73f7-bb6b-4889-a715-d9eb2d1925cc
+  hook-ip: ${HOOK_HOST:192.168.1.100}
+  sdp-ip: ${MEDIA_IP:192.168.1.249}
+  stream-ip: ${MEDIA_IP:192.168.1.249}
+  record-assist-port: 9202
+  rtp:
+    enable: true
+    port-range: 30000-30500
+    send-port-range: 30000-30500
+global:
+  senior-sdp: false
+
