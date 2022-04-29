@@ -1,5 +1,6 @@
 package com.yyh.gb28181.component;
 
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -8,6 +9,7 @@ import lombok.Data;
  * @description: SipRequestMappingInfo
  **/
 @Data
+@Builder
 public class SipRequestMappingInfo {
     public final String type;
     public SipRequestMappingInfo(String type) {

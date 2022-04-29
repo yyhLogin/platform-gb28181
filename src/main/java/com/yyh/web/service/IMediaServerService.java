@@ -2,6 +2,7 @@ package com.yyh.web.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.fasterxml.jackson.databind.util.ObjectBuffer;
+import com.yyh.common.utils.CommonResult;
 import com.yyh.media.config.ZlmServerConfig;
 import com.yyh.web.entity.GbDevice;
 import com.yyh.web.entity.MediaServer;
@@ -56,4 +57,34 @@ public interface IMediaServerService extends IService<MediaServer> {
      * @return MediaServer
      */
     MediaServer queryMediaServerByDeviceId(String deviceId);
+
+    /**
+     * 查询媒体服务器
+     * @param serverId 媒体服务id
+     * @return MediaServer
+     */
+    MediaServer queryMediaServerByServerId(String serverId);
+
+    /**
+     * 检测媒体服务器是否正常
+     * @param ip 媒体服务器ip
+     * @param port 媒体服务器port
+     * @param secret 媒体服务器秘钥
+     * @return MediaServer
+     */
+    CommonResult<MediaServer> checkMediaServer(String ip, Integer port, String secret);
+
+    /**
+     * 新增媒体服务器
+     * @param mediaServer 媒体服务器参数
+     * @return Boolean
+     */
+    Boolean saveMediaServer(MediaServer mediaServer);
+
+    /**
+     * 更新媒体服务器
+     * @param mediaServer mediaServer
+     * @return Boolean
+     */
+    Boolean updateMediaServerById(MediaServer mediaServer);
 }

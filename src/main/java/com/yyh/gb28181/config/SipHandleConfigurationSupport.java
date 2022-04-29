@@ -1,13 +1,12 @@
 package com.yyh.gb28181.config;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.yyh.gb28181.dispatcher.DefaultSipRequestDispatcher;
-import com.yyh.gb28181.dispatcher.SipRequestDispatcher;
+import com.yyh.gb28181.callback.SipSubscribe;
+import com.yyh.gb28181.dispatcher.DefaultSipDispatcher;
+import com.yyh.gb28181.dispatcher.SipDispatcher;
 import com.yyh.gb28181.component.SipRequestProcessorMapping;
-import com.yyh.gb28181.queue.DefaultSipRequestEventBus;
-import com.yyh.gb28181.queue.SipRequestMsgQueue;
-import com.yyh.gb28181.queue.SipRequestMsgQueueListener;
-import com.yyh.gb28181.queue.listener.DefaultSipRequestMsgQueueListener;
+import com.yyh.gb28181.queue.*;
+import com.yyh.gb28181.queue.listener.DefaultSipMessageQueueListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -34,13 +33,17 @@ public abstract class SipHandleConfigurationSupport {
     }
 
 
+    /**
+     * 注册消息处理
+     * @return SipRequestProcessorMapping
+     */
     @Bean
     public SipRequestProcessorMapping sipRequestProcessorMapping(){
         return new SipRequestProcessorMapping();
     }
 
     @Bean
-    public SipRequestMsgQueue requestMsgQueue() {
+    public SipMessageQueue sipMessageQueue(){
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat(poolProps.getThreadNameFormat())
                 .setDaemon(true)
@@ -54,17 +57,18 @@ public abstract class SipHandleConfigurationSupport {
                 threadFactory,
                 new ThreadPoolExecutor.AbortPolicy()
         );
-        return new DefaultSipRequestEventBus(executor);
+        return new DefaultSipEventBus(executor);
     }
 
     @Bean
-    public SipRequestMsgQueueListener msgQueueListener(SipRequestMsgQueue queue,SipRequestProcessorMapping mapping) {
-        return new DefaultSipRequestMsgQueueListener((DefaultSipRequestEventBus) queue,mapping);
+    public SipMessageQueueListener sipMessageQueueListener(SipMessageQueue queue,
+                                                           SipRequestProcessorMapping mapping,
+                                                           SipSubscribe sipSubscribe) {
+        return new DefaultSipMessageQueueListener((DefaultSipEventBus) queue,mapping,sipSubscribe);
     }
 
     @Bean
-    public SipRequestDispatcher requestMsgDispatcher(SipRequestMsgQueue sipRequestMsgQueue) {
-        return new DefaultSipRequestDispatcher(sipRequestMsgQueue);
+    public SipDispatcher sipDispatcher(SipMessageQueue sipMessageQueue) {
+        return new DefaultSipDispatcher(sipMessageQueue);
     }
-
 }

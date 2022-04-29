@@ -1,12 +1,11 @@
 package com.yyh.gb28181.event.online;
 
 import cn.hutool.core.util.StrUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yyh.gb28181.command.ISipCommander;
 import com.yyh.gb28181.constant.SipRequestConstant;
 import com.yyh.gb28181.constant.VideoManagerConstant;
-import com.yyh.media.constants.MediaConstant;
 import com.yyh.web.entity.GbDevice;
 import com.yyh.web.service.IGbDeviceService;
 import com.yyh.web.service.IMediaServerService;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -106,14 +104,15 @@ public class OnlineEventListener implements ApplicationListener<OnlineEvent> {
             device.setOnline(VideoManagerConstant.DEVICE_ONLINE_STATE);
             deviceService.save(device);
         }else {
-            byId.setRegisterTime(LocalDateTime.now());
             byId.setUpdateTime(LocalDateTime.now());
             byId.setIp(device.getIp());
             byId.setPort(device.getPort());
-            byId.setHostAddress(device.getHostAddress());
             byId.setExpires(device.getExpires());
             byId.setTransport(device.getTransport());
-            deviceService.updateById(byId);
+            byId.setHostAddress(device.getHostAddress());
+            byId.setOnline(VideoManagerConstant.DEVICE_ONLINE_STATE);
+            boolean b = deviceService.updateById(byId);
+            log.info("更新设备信息:{},{}",b,byId.getHostAddress());
         }
     }
 
@@ -124,14 +123,11 @@ public class OnlineEventListener implements ApplicationListener<OnlineEvent> {
     private void keepAlive(String id){
         String key = VideoManagerConstant.DEVICE_ONLINE + id;
         redisTemplate.opsForValue().set(key,"online", VideoManagerConstant.ONLINE_EXPIRED_SECOND, TimeUnit.SECONDS);
-        GbDevice byId = deviceService.getById(id);
-        if (byId==null){
-            log.error("Keepalive error | 设备不存在 :{}",id);
-            return;
-        }
-        byId.setKeepaliveTime(LocalDateTime.now());
-        byId.setOnline(VideoManagerConstant.DEVICE_ONLINE_STATE);
-        deviceService.updateById(byId);
+        deviceService.update(null,
+                Wrappers.<GbDevice>lambdaUpdate()
+                        .set(GbDevice::getOnline,VideoManagerConstant.DEVICE_ONLINE_STATE)
+                        .set(GbDevice::getKeepaliveTime,LocalDateTime.now())
+                        .eq(GbDevice::getGbId,id));
     }
 
     /**
@@ -141,12 +137,9 @@ public class OnlineEventListener implements ApplicationListener<OnlineEvent> {
     private void outline(String id){
         String key = VideoManagerConstant.DEVICE_ONLINE + id;
         redisTemplate.delete(key);
-        GbDevice byId = deviceService.getById(id);
-        if (byId==null){
-            log.error("Keepalive error | 设备不存在 :{}",id);
-            return;
-        }
-        byId.setOnline(VideoManagerConstant.DEVICE_OFFLINE_STATE);
-        deviceService.updateById(byId);
+        deviceService.update(null,
+                Wrappers.<GbDevice>lambdaUpdate()
+                        .set(GbDevice::getOnline,VideoManagerConstant.DEVICE_OFFLINE_STATE)
+                        .eq(GbDevice::getGbId,id));
     }
 }

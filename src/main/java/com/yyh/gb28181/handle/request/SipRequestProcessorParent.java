@@ -48,8 +48,8 @@ public abstract class SipRequestProcessorParent {
 
     /**
      * 根据 RequestEvent 获取 ServerTransaction
-     * @param evt
-     * @return
+     * @param evt evt
+     * @return ServerTransaction
      */
     public ServerTransaction getServerTransaction(RequestEvent evt) {
         Request request = evt.getRequest();
@@ -58,7 +58,7 @@ public abstract class SipRequestProcessorParent {
         boolean isTcp = false;
         ViaHeader reqViaHeader = (ViaHeader) request.getHeader(ViaHeader.NAME);
         String transport = reqViaHeader.getTransport();
-        if (transport.equals("TCP")) {
+        if (transport.equals(SipRequestConstant.TCP)) {
             isTcp = true;
         }
 
@@ -77,9 +77,7 @@ public abstract class SipRequestProcessorParent {
                         serverTransaction = udpSipProvider.getNewServerTransaction(request);
                     }
                 }
-            } catch (TransactionAlreadyExistsException e) {
-                logger.error(e.getMessage());
-            } catch (TransactionUnavailableException e) {
+            } catch (TransactionAlreadyExistsException | TransactionUnavailableException e) {
                 logger.error(e.getMessage());
             }
         }

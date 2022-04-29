@@ -1,19 +1,10 @@
 package com.yyh.gb28181.component;
 
-import com.yyh.gb28181.annotation.SipRequestMapping;
-import com.yyh.gb28181.annotation.SipRequestProcess;
-import com.yyh.gb28181.component.AbstractSipRequestHandlerMethodInfoMapping;
-import com.yyh.gb28181.component.SipRequestMappingInfo;
+import com.yyh.gb28181.annotation.SipMapping;
+import com.yyh.gb28181.annotation.SipProcess;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.lang.Nullable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.servlet.mvc.condition.AbstractRequestCondition;
-import org.springframework.web.servlet.mvc.condition.CompositeRequestCondition;
-import org.springframework.web.servlet.mvc.condition.RequestCondition;
-import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 
 
@@ -46,7 +37,7 @@ public class SipRequestProcessorMapping extends AbstractSipRequestHandlerMethodI
      */
     @Override
     protected boolean isHandler(Class<?> beanType) {
-        return AnnotatedElementUtils.hasAnnotation(beanType,SipRequestMapping.class);
+        return AnnotatedElementUtils.hasAnnotation(beanType,SipMapping.class);
     }
 
     /**
@@ -60,12 +51,20 @@ public class SipRequestProcessorMapping extends AbstractSipRequestHandlerMethodI
      */
     @Override
     protected SipRequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
+        SipProcess requestMapping = AnnotatedElementUtils.findMergedAnnotation(method, SipProcess.class);
+        if (requestMapping!=null){
+            SipMapping handleMapping = AnnotatedElementUtils.findMergedAnnotation(handlerType, SipMapping.class);
+            if (handleMapping!=null){
+                return new SipRequestMappingInfo(handleMapping.value()+"/"+requestMapping.method());
+            }
+            return new SipRequestMappingInfo(requestMapping.method());
+        }
+        return null;
 //        SipRequestMappingInfo requestMappingInfo = createRequestMappingInfo(method);
-        SipRequestProcess requestMapping = AnnotatedElementUtils.findMergedAnnotation(method, SipRequestProcess.class);
-        return (requestMapping != null ? new SipRequestMappingInfo(requestMapping.method()) : null);
+        //SipRequestProcess requestMapping = AnnotatedElementUtils.findMergedAnnotation(method, SipRequestProcess.class);
+        //return (requestMapping != null ? new SipRequestMappingInfo(requestMapping.method()) : null);
 //        SipRequestProcess annotation = method.getAnnotation(SipRequestProcess.class);
 //        return new SipRequestMappingInfo(annotation.method());
     }
-
 
 }

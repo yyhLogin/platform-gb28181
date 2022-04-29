@@ -50,9 +50,18 @@ public class SipServerProperties {
      */
     private String password;
 
+    /**
+     * 转动速度
+     */
     private Integer ptzSpeed = 50;
 
+    /**
+     * 心跳超时时间
+     */
     private Integer keepaliveTimeOut = 255;
 
+    /**
+     * 注册过期时间
+     */
     private Integer registerTimeInterval = 60;
 }

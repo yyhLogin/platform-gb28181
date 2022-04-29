@@ -1,13 +1,11 @@
 package com.yyh.gb28181.event.online;
 
 import com.yyh.web.entity.GbDevice;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
 
-import java.util.PrimitiveIterator;
+import java.io.Serializable;
 
 /**
  * @author: yyh
@@ -16,11 +14,10 @@ import java.util.PrimitiveIterator;
  **/
 @Getter
 @Setter
-public class OnlineEvent extends ApplicationEvent {
+public class OnlineEvent extends ApplicationEvent implements Serializable {
 
 
     private static final long serialVersionUID = 1L;
-
 
     private String id;
 

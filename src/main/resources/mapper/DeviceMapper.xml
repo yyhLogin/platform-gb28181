@@ -2,4 +2,22 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yyh.web.mapper.GbDeviceMapper">
 
+    <update id="updateDevice" parameterType="com.yyh.web.entity.GbDevice">
+        update gb_device
+        set
+        ip = #{ip} ,
+        port = #{port} ,
+        expires = #{expires} ,
+        transport = #{transport},
+        host_address = #{hostAddress},
+        online = #{online}
+        where gb_id = #{gbId}
+    </update>
+    <update id="updateDeviceOnline" parameterType="map">
+        update gb_device
+        set
+        keepalive_time= #{now} ,
+        online = #{state}
+        where gb_id = #{id}
+    </update>
 </mapper>

@@ -1,6 +1,9 @@
 server:
   port: 10086
 spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher #防止Failed to start bean ‘documentationPluginsBootstrapper’
   profiles:
     active: dev
   jackson:
@@ -19,8 +22,10 @@ spring:
         - file:${user.dir}/
   datasource:
     url: jdbc:mysql://192.168.1.251:9106/ecdispatch?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+#    url: jdbc:mysql://192.168.1.100:3306/ecdispatch?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: root
     password: jj@admin
+#    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
@@ -56,9 +61,9 @@ mybatis-plus:
       capital-mode: true
 sip:
   ip: ${SIP_HOST:192.168.1.100}
-  port: 9306
-  domain: ${SIP_DOMAIN:4404000000}
-  id: ${SIP_ID:44040000002000000001}
+  port: 5060
+  domain: ${SIP_DOMAIN:4403000000}
+  id: ${SIP_ID:44030000002000000001}
   password: ${SIP_PWD:123456}
 media:
   ip: ${MEDIA_IP:192.168.1.249}

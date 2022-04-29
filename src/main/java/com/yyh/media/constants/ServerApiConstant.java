@@ -21,6 +21,16 @@ public interface ServerApiConstant {
      */
     String OPEN_RTP_SERVER = "http://%s:%d/index/api/openRtpServer";
 
+    /**
+     * 关闭GB28181 RTP接收端口
+     */
+    String CLOSE_RTP_SERVER = "http://%s:%d/index/api/closeRtpServer";
+
+    /**
+     * 获取流列表，可选筛选参数
+     */
+    String GET_MEDIA_LIST = "http://%s:%d/index/api/getMediaList?secret=%s";
+
 
     //*******************hook url*********************
 
@@ -78,6 +88,16 @@ public interface ServerApiConstant {
     String ON_STREAM_CHANGED_KEY = "hook.on_stream_changed";
 
     /**
+     * 流无人观看
+     */
+    String ON_STREAM_NONE_READER = "http://%s:%d/index/hook/on_stream_none_reader";
+
+    /**
+     * 流无人观看 key
+     */
+    String ON_STREAM_NONE_READER_KEY = "hook.on_stream_none_reader";
+
+    /**
      * 流变化
      */
     String ON_SHELL_LOGIN = "http://%s:%d/index/hook/on_shell_login";
@@ -86,5 +106,6 @@ public interface ServerApiConstant {
      * 流变化 key
      */
     String ON_SHELL_LOGIN_KEY = "hook.on_shell_login";
+
     //************************************************
 }

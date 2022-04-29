@@ -2,10 +2,7 @@ package com.yyh.gb28181.utils;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import org.dom4j.Attribute;
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.Element;
+import org.dom4j.*;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +62,42 @@ public class XmlUtil {
     }
 
     /**
+     * xml解析为map的方法
+     * @param xml xml
+     * @return
+     */
+    public static <K, V> Map<String, Object> xmlToMap(String xml) throws Exception {
+        Document document = DocumentHelper.parseText(xml);
+        Element elements = document.getRootElement();
+        Map<String, Object> maps = new HashMap<>();
+        elementMap(elements, maps);
+        return maps;
+
+    }
+
+    /**
+     * xml解析为map的方法
+     *
+     * @param element element
+     * @param maps maps
+     */
+    @SuppressWarnings({"unused" })
+    private static void elementMap(Element element, Map<String, Object> maps) {
+        List<Attribute> list = element.attributes();
+        for (Attribute attr : list) {
+            maps.put(attr.getName(), attr.getValue());
+        }
+        if (!("").equals(element.getTextTrim())) {
+            maps.put(element.getName(), element.getTextTrim());
+        }
+        List<Element> elements = element.elements();
+        Element elp = null;
+        for (Element el : elements) {
+            elementMap(el, maps);
+        }
+    }
+
+    /**
      * 递归解析xml节点，适用于 多节点数据
      *
      * @param node     node
@@ -118,7 +151,8 @@ public class XmlUtil {
             }
         }
         List<Element> chdEl = element.elements();
-        if (chdEl.isEmpty() && !StringUtils.isEmpty(element.getText())) {// 如果没有子元素,只有一个值
+        // 如果没有子元素,只有一个值
+        if (chdEl.isEmpty() && !StringUtils.isEmpty(element.getText())) {
             json.put(element.getName(), element.getText());
         }
 

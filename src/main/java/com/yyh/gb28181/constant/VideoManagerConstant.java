@@ -19,7 +19,7 @@ public interface VideoManagerConstant {
     /**
      * 设备通道
      */
-    String DEVICE_CHANEL_28181 = "device_channel_28181:";
+    String DEVICE_CHANEL_28181 = "gb28181:device:channel:";
 
 
     String DEVICE_ONLINE = "online:";
@@ -36,6 +36,29 @@ public interface VideoManagerConstant {
      * 信令交互默认字符格式
      */
     String DEVICE_DEFAULT_CHARSET = "gb2312";
+
+    /**
+     * 视音频回放完成标志
+     */
+    String PLAYBACK_STOP_STATUS = "121";
+
+
+    //*************************平台相关key***************************
+
+    /**
+     * 注册信息
+     */
+    String PLATFORM_REGISTER_INFO = "gb28181:platform:registerInfo:";
+    String PLATFORM_REGISTER = "gb28181:platform:register:";
+    /**
+     * 心跳信息
+     */
+    String PLATFORM_KEEPALIVE = "gb28181:platform:keepalive:";
+    /**
+     * 缓存信息
+     */
+    String PLATFORM_CACHE_INFO = "gb28181:platform:cacheInfo:";
+    String PLATFORM_CACHE = "gb28181:platform:cache:";
 
 
 

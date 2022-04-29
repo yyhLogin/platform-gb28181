@@ -1,6 +1,7 @@
 package com.yyh.gb28181.callback;
 
 
+import java.util.EventObject;
 
 /**
  * @author: yyh
@@ -12,6 +13,6 @@ public interface SipCallback {
      * sip 回调
      * @param eventResult eventResult
      */
-    void response(EventResult<Object> eventResult);
+    void response(EventResult<EventObject> eventResult);
 }
 

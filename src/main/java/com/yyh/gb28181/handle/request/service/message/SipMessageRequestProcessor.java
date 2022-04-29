@@ -3,15 +3,23 @@ package com.yyh.gb28181.handle.request.service.message;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yyh.common.constant.CommonResultConstants;
+import com.yyh.common.utils.CommonResult;
 import com.yyh.gb28181.constant.VideoManagerConstant;
-import com.yyh.gb28181.entity.DeviceChannel;
+import com.yyh.web.entity.DeviceChannel;
 import com.yyh.gb28181.handle.request.SipRequestProcessorParent;
+import com.yyh.gb28181.utils.XmlUtil;
+import com.yyh.media.callback.DeferredResultHandle;
 import com.yyh.web.entity.GbDevice;
+import com.yyh.web.service.IGbDeviceChannelService;
 import com.yyh.web.service.IGbDeviceService;
 import gov.nist.javax.sip.RequestEventExt;
 import gov.nist.javax.sip.address.SipUri;
+import lombok.RequiredArgsConstructor;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.slf4j.Logger;
@@ -27,9 +35,11 @@ import javax.sip.header.FromHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import java.text.ParseException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.yyh.gb28181.utils.XmlUtil.getText;
 
@@ -39,10 +49,10 @@ import static com.yyh.gb28181.utils.XmlUtil.getText;
  * @description: SipMsgRequestProcessorService
  **/
 @Component
+@RequiredArgsConstructor
 public class SipMessageRequestProcessor extends SipRequestProcessorParent{
 
     private final static Logger logger = LoggerFactory.getLogger(SipMessageRequestProcessor.class);
-
 
     private final IGbDeviceService gb28181Service;
 
@@ -50,12 +60,10 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
 
     private final ObjectMapper mapper;
 
-    public SipMessageRequestProcessor(IGbDeviceService gb28181Service, RedisTemplate<String, String> redisTemplate, ObjectMapper mapper) {
-        this.gb28181Service = gb28181Service;
-        this.redisTemplate = redisTemplate;
-        this.mapper = mapper;
-    }
+    private final DeferredResultHandle deferredResultHandle;
 
+
+    private final IGbDeviceChannelService channelService;
 
 
     /**
@@ -64,7 +72,7 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
      */
     public void messageResponseCatalog(RequestEvent requestEvent) {
         Request request = requestEvent.getRequest();
-///        logger.info("{}",request);
+        logger.info("{}",request);
         FromHeader header = (FromHeader) request.getHeader(FromHeader.NAME);
         Address address = header.getAddress();
         SipUri uri = (SipUri) address.getURI();
@@ -77,6 +85,7 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
                 responseAck(evt, Response.NOT_FOUND, "device id not found");
                 return;
             }
+            String key = DeferredResultHandle.CALLBACK_CMD_CATALOG + deviceId;
             String charSet = StrUtil.isBlank(byId.getCharset())? VideoManagerConstant.DEVICE_DEFAULT_CHARSET:byId.getCharset();
             Element rootElement = getRootElement(evt, charSet);
             Element deviceListElement = rootElement.element("DeviceList");
@@ -92,11 +101,12 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
                     }
                     String channelDeviceId = channelDeviceElement.getText();
                     Element channelNameElement = itemDevice.element("Name");
-                    String channelName = channelNameElement != null ? channelNameElement.getTextTrim().toString() : "";
+                    String channelName = channelNameElement != null ? channelNameElement.getTextTrim() : "";
                     Element statusElement = itemDevice.element("Status");
-                    String status = statusElement != null ? statusElement.getText().toString() : "ON";
+                    String status = statusElement != null ? statusElement.getText() : "ON";
                     DeviceChannel deviceChannel = new DeviceChannel();
                     deviceChannel.setName(channelName);
+                    deviceChannel.setDeviceId(deviceId);
                     deviceChannel.setChannelId(channelDeviceId);
                     // ONLINE OFFLINE  HIKVISION DS-7716N-E4 NVR的兼容性处理
                     if (status.equals("ON") || status.equals("On") || status.equals("ONLINE")) {
@@ -105,7 +115,6 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
                     if (status.equals("OFF") || status.equals("Off") || status.equals("OFFLINE")) {
                         deviceChannel.setStatus(0);
                     }
-
                     deviceChannel.setManufacture(getText(itemDevice, "Manufacturer"));
                     deviceChannel.setModel(getText(itemDevice, "Model"));
                     deviceChannel.setOwner(getText(itemDevice, "Owner"));
@@ -148,12 +157,14 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
                         deviceChannel.setPort(Integer.parseInt(getText(itemDevice, "Port")));
                     }
                     deviceChannel.setPassword(getText(itemDevice, "Password"));
-                    if (NumberUtil.isDouble(getText(itemDevice, "Longitude"))) {
+                    if (StrUtil.isNotBlank(getText(itemDevice, "Longitude"))
+                            && NumberUtil.isDouble(getText(itemDevice, "Longitude"))) {
                         deviceChannel.setLongitude(Double.parseDouble(getText(itemDevice, "Longitude")));
                     } else {
                         deviceChannel.setLongitude(0.00);
                     }
-                    if (NumberUtil.isDouble(getText(itemDevice, "Latitude"))) {
+                    if (StrUtil.isNotBlank(getText(itemDevice, "Latitude"))
+                            &&NumberUtil.isDouble(getText(itemDevice, "Latitude"))) {
                         deviceChannel.setLatitude(Double.parseDouble(getText(itemDevice, "Latitude")));
                     } else {
                         deviceChannel.setLatitude(0.00);
@@ -165,29 +176,15 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
                     }
                     /// 默认含有音频，播放时再检查是否有音频及是否AAC
                     deviceChannel.setHasAudio(true);
-                    /// storager.updateChannel(device.getDeviceId(), deviceChannel);
                     channelList.add(deviceChannel);
                 }
-                if (channelList.size()!=0){
-                    String cacheKey = VideoManagerConstant.DEVICE_CHANEL_28181 + deviceId;
-                    Boolean hasKey = redisTemplate.hasKey(cacheKey);
-                    if (BooleanUtil.isTrue(hasKey)){
-                        redisTemplate.delete(cacheKey);
-                    }
-                    channelList.forEach(item->{
-                        try {
-                            redisTemplate.opsForHash().put(cacheKey,item.getChannelId(),mapper.writeValueAsString(item));
-                        } catch (JsonProcessingException e) {
-                            logger.error("messageCatalog update cache has error {} | {}",deviceId,e.getMessage(),e);
-                        }
-                    });
-                }else {
-                    logger.info("messageCatalog no catalog ");
-                }
-//                RequestMessage msg = new RequestMessage();
-//                msg.setKey(key);
-//                msg.setData(device);
-//                deferredResultHolder.invokeAllResult(msg);
+                saveOrUpdate(channelList,deviceId);
+                CommonResult<List<DeviceChannel>> commonResult = CommonResult.<List<DeviceChannel>>builder()
+                        .code(CommonResultConstants.SUCCESS)
+                        .msg("更新设备通道信息成功")
+                        .data(channelList)
+                        .build();
+                deferredResultHandle.invokeAllResult(key,commonResult);
                 // 回复200 OK
                 responseAck(evt, Response.OK);
             }
@@ -196,4 +193,76 @@ public class SipMessageRequestProcessor extends SipRequestProcessorParent{
         }
     }
 
+    /**
+     * 响应查询设备通道信息
+     * @param requestEvent requestEvent
+     */
+    public void messageResponseDeviceStatus(RequestEvent requestEvent) {
+        logger.info("响应设备状态信息:{}",requestEvent.getRequest());
+        Request request = requestEvent.getRequest();
+///        logger.info("{}",request);
+        FromHeader header = (FromHeader) request.getHeader(FromHeader.NAME);
+        Address address = header.getAddress();
+        SipUri uri = (SipUri) address.getURI();
+        String deviceId = uri.getUser();
+        try {
+            RequestEventExt evt = (RequestEventExt)requestEvent;
+            GbDevice byId = gb28181Service.getById(deviceId);
+            if (byId==null){
+                logger.info("设备不存在:{}",deviceId);
+                responseAck(evt, Response.NOT_FOUND, "device id not found");
+                return;
+            }
+            responseAck(evt, Response.OK);
+            String charSet = StrUtil.isBlank(byId.getCharset())? VideoManagerConstant.DEVICE_DEFAULT_CHARSET:byId.getCharset();
+            Element rootElement = getRootElement(evt, charSet);
+            JSONObject json = new JSONObject();
+            XmlUtil.node2Json(rootElement, json);
+            String sn = getText(rootElement, "SN");
+            String key = DeferredResultHandle.CALLBACK_CMD_DEVICE_STATUS + byId.getGbId();
+            CommonResult<String> commonResult = CommonResult.success(json.toJSONString());
+            deferredResultHandle.invokeResult(key,sn,commonResult);
+        } catch (InvalidArgumentException | ParseException | SipException | DocumentException e) {
+            logger.error("messageCatalog handle has error {} | {}",deviceId,e.getMessage(),e);
+        }
+    }
+
+    /**
+     * 新增或更新设备通道信息
+     * @param channelList channelList
+     * @param deviceId deviceId
+     */
+    private void saveOrUpdate(List<DeviceChannel> channelList,String deviceId){
+        if (channelList.size()!=0){
+            String cacheKey = VideoManagerConstant.DEVICE_CHANEL_28181 + deviceId;
+            Boolean hasKey = redisTemplate.hasKey(cacheKey);
+            if (BooleanUtil.isTrue(hasKey)){
+                redisTemplate.delete(cacheKey);
+            }
+            //判断数据库中数据
+            List<String> collect = channelList.stream().map(DeviceChannel::getChannelId).collect(Collectors.toList());
+            boolean remove = channelService.remove(Wrappers.<DeviceChannel>lambdaQuery().eq(DeviceChannel::getDeviceId, deviceId)
+                    .notIn(DeviceChannel::getChannelId, collect));
+            channelList.forEach(item->{
+                try {
+                    List<DeviceChannel> list = channelService.list(Wrappers.<DeviceChannel>lambdaQuery()
+                            .eq(DeviceChannel::getChannelId, item.getChannelId())
+                            .eq(DeviceChannel::getDeviceId, item.getDeviceId()));
+                    if (list!=null&&list.size()>0){
+                        item.setId(list.get(0).getId());
+                        item.setUpdateTime(LocalDateTime.now());
+                        channelService.updateById(item);
+                    }else {
+                        item.setCreateTime(LocalDateTime.now());
+                        channelService.save(item);
+                    }
+                    redisTemplate.opsForHash().put(cacheKey,item.getChannelId(),mapper.writeValueAsString(item));
+                } catch (JsonProcessingException e) {
+                    logger.error("messageCatalog update cache has error {} | {}",deviceId,e.getMessage(),e);
+                }
+            });
+        }else {
+            logger.info("messageCatalog no catalog ");
+        }
+    }
 }
